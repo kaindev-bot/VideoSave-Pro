@@ -15,6 +15,10 @@ app.use(morgan('dev'));
 
 app.use('/api', apiRoutes);
 
+app.get('/', (req, res) => {
+  res.status(200).send('VideoSave Pro API is online!');
+});
+
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'VideoSave Pro API is running' });
 });
