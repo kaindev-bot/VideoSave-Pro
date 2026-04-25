@@ -33,7 +33,7 @@ export default function VideoPreview({ data, originalUrl }) {
       document.body.removeChild(a);
 
     } catch (error) {
-      alert('Erro ao iniciar o download. Tente novamente.');
+      alert(error.response?.data?.error || 'Erro ao iniciar o download. Tente novamente.');
     } finally {
       setDownloadingId(null);
     }

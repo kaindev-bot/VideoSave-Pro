@@ -14,8 +14,8 @@ router.post('/analyze', async (req, res) => {
     const data = await analyzeUrl(url);
     res.json(data);
   } catch (error) {
-    console.error('Error analyzing URL:', error);
-    res.status(500).json({ error: 'Failed to analyze the provided URL. Please check if it is valid.' });
+    console.error('Error analyzing URL:', error.message);
+    res.status(500).json({ error: error.message || 'Failed to analyze the provided URL.' });
   }
 });
 
@@ -30,8 +30,8 @@ router.post('/download', async (req, res) => {
     const downloadData = await getDownloadStream(url, formatId);
     res.json(downloadData);
   } catch (error) {
-    console.error('Error getting download info:', error);
-    res.status(500).json({ error: 'Failed to process download.' });
+    console.error('Error getting download info:', error.message);
+    res.status(500).json({ error: error.message || 'Failed to process download.' });
   }
 });
 
