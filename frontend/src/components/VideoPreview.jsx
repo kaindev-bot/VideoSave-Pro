@@ -16,7 +16,8 @@ export default function VideoPreview({ data, originalUrl }) {
   const handleDownload = async (formatId) => {
     setDownloadingId(formatId);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const apiUrl = rawUrl.replace(/\/$/, '');
       const res = await axios.post(`${apiUrl}/api/download`, {
         url: originalUrl,
         formatId: formatId
