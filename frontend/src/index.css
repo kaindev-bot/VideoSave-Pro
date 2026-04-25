@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+@theme {
+  --color-aero-blue: #00b4ff;
+  --color-aero-green: #8cc63f;
+  --color-aero-cyan: #d0f4fc;
+}
+
+@layer base {
+  body {
+    /* Frutiger Aero Background: A beautiful bright, glossy sky blue gradient with hints of cyan and light green */
+    background: radial-gradient(circle at 50% 0%, #dcfaff 0%, #a8e6f9 35%, #5ac8fa 70%, #009ceb 100%);
+    background-attachment: fixed;
+    color: #1a365d;
+    font-family: 'Segoe UI', 'Inter', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+}
+
+@layer components {
+  /* Aero Glass Panel */
+  .aero-glass {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.2) 100%);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 
+      0 8px 32px 0 rgba(0, 110, 180, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.4);
+    border-radius: 1.5rem;
+  }
+
+  /* Aero Button (Glossy) */
+  .aero-button {
+    background: linear-gradient(to bottom, #74d8ff 0%, #00a2ff 48%, #0076db 52%, #00b4ff 100%);
+    border: 1px solid #005a9e;
+    border-radius: 9999px;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow: 
+      inset 0 2px 2px rgba(255, 255, 255, 0.8),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.2),
+      0 4px 6px rgba(0, 80, 150, 0.3);
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .aero-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50%;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.1) 100%);
+    border-radius: 9999px 9999px 0 0;
+    pointer-events: none;
+  }
+
+  .aero-button:hover {
+    background: linear-gradient(to bottom, #8ee1ff 0%, #1ab2ff 48%, #0087ed 52%, #19c1ff 100%);
+    box-shadow: 
+      inset 0 2px 2px rgba(255, 255, 255, 0.9),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.2),
+      0 6px 12px rgba(0, 80, 150, 0.4);
+    transform: translateY(-1px);
+  }
+
+  .aero-button:active {
+    background: linear-gradient(to bottom, #0076db 0%, #00a2ff 100%);
+    box-shadow: 
+      inset 0 2px 5px rgba(0, 0, 0, 0.3),
+      0 1px 2px rgba(0, 80, 150, 0.2);
+    transform: translateY(1px);
+  }
+
+  /* Aero Button Green */
+  .aero-button-green {
+    background: linear-gradient(to bottom, #c4ed68 0%, #8cc63f 48%, #72a331 52%, #9ad345 100%);
+    border: 1px solid #4a6e1d;
+  }
+  .aero-button-green:hover {
+    background: linear-gradient(to bottom, #d2f28a 0%, #a0d655 48%, #85b842 52%, #aee35a 100%);
+  }
+  .aero-button-green:active {
+    background: linear-gradient(to bottom, #72a331 0%, #8cc63f 100%);
+  }
+
+  /* Text with drop shadow */
+  .aero-text-shadow {
+    text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8), 0 0 10px rgba(255, 255, 255, 0.5);
+  }
+  
+  .aero-title-shadow {
+    color: #0b4b8a;
+    text-shadow: 1px 2px 3px rgba(255,255,255,0.9), 0px 0px 10px rgba(255,255,255,0.6);
+  }
+
+  /* 3D Aero Bubble */
+  .aero-bubble {
+    position: fixed;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.1) 40%, rgba(0, 150, 255, 0.1) 80%, rgba(255, 255, 255, 0.8) 100%);
+    box-shadow: 
+      inset 0 0 10px rgba(255, 255, 255, 0.9),
+      inset 10px 0 20px rgba(255, 255, 255, 0.5),
+      inset -10px 0 20px rgba(0, 150, 255, 0.3),
+      0 4px 15px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(2px);
+    pointer-events: none;
+    z-index: 0;
+    animation: floatUp 15s ease-in infinite;
+  }
+}
+
+/* Animations */
+@keyframes floatUp {
+  0% { transform: translateY(110vh) translateX(0) scale(0.5); opacity: 0; }
+  10% { opacity: 0.8; }
+  50% { transform: translateY(50vh) translateX(20px) scale(1); opacity: 0.8; }
+  90% { opacity: 0; }
+  100% { transform: translateY(-20vh) translateX(-20px) scale(1.2); opacity: 0; }
+}
+
+/* Loader Animation */
+.loader-spinner {
+  border: 3px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  border-top: 3px solid #fff;
+  width: 24px;
+  height: 24px;
+  animation: spin 1s linear infinite;
+  box-shadow: 0 0 5px rgba(0,0,0,0.2);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
