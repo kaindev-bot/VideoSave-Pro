@@ -13,10 +13,23 @@ export async function analyzeUrl(url) {
     const output = await ytDlp(url, {
       dumpJson: true,
       noWarnings: true,
-      noCallHome: true,
       noCheckCertificate: true,
       preferFreeFormats: true,
-      youtubeSkipDashManifest: true,
+      noPlaylist: true,
+      addHeader: [
+        'referer:https://www.google.com/',
+        'user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'accept-language:en-US,en;q=0.9',
+        'sec-ch-ua:"Chromium";v="122", "Not(A:Brand";v="24", "Google Chrome";v="122"',
+        'sec-ch-ua-mobile:?0',
+        'sec-ch-ua-platform:"Windows"',
+        'sec-fetch-dest:document',
+        'sec-fetch-mode:navigate',
+        'sec-fetch-site:none',
+        'sec-fetch-user:?1',
+        'upgrade-insecure-requests:1'
+      ]
     });
 
     const formats = output.formats
