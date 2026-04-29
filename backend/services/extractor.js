@@ -20,6 +20,11 @@ export async function analyzeUrl(url) {
   const cookiesPath = path.join(__dirname, '..', 'cookies.txt');
   const hasCookies = fs.existsSync(cookiesPath);
 
+  // Platform-specific options
+  const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+  const isTikTok = url.includes('tiktok.com');
+  const isInstagram = url.includes('instagram.com');
+
   const options = {
     dumpJson: true,
     noWarnings: true,
@@ -28,30 +33,28 @@ export async function analyzeUrl(url) {
     noPlaylist: true,
     forceIpv4: true,
     geoBypass: true,
-    // Removed impersonate: 'chrome' because it requires curl_cffi which is missing on Render
-    addHeader: [
-      'referer:https://www.google.com/',
-      'user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-      'accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-      'accept-language:en-US,en;q=0.9',
-    ]
   };
 
-  // Add cookies if available
+  // Set User-Agent and Headers based on platform
+  if (isYouTube) {
+    options.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+    options.referer = 'https://www.google.com/';
+    options.extractorArgs = 'youtube:player-client=android,ios,web;player-skip=web_embedded_client_config';
+  } else if (isTikTok) {
+    // TikTok often prefers mobile user agents
+    options.user_agent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1';
+    options.referer = 'https://www.tiktok.com/';
+    options.extractorArgs = 'tiktok:api_hostname=api16-normal-c-useast1a.tiktokv.com';
+  } else if (isInstagram) {
+    options.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+    options.referer = 'https://www.instagram.com/';
+  } else {
+    options.user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+  }
+
   if (hasCookies) {
     options.cookies = cookiesPath;
     console.log('Using cookies.txt for extraction');
-  }
-
-  // Specific flags for YouTube
-  if (url.includes('youtube.com') || url.includes('youtu.be')) {
-    // Using android player which is often more lenient
-    options.extractorArgs = 'youtube:player-client=android,web;player-skip=web_embedded_client_config';
-  }
-
-  // Specific flags for TikTok
-  if (url.includes('tiktok.com')) {
-    options.addHeader.push('referer:https://www.tiktok.com/');
   }
 
   try {
@@ -61,7 +64,6 @@ export async function analyzeUrl(url) {
       throw new Error('Could not find any formats for this video.');
     }
 
-    // Filter and sort formats
     const formats = output.formats
       .filter(f => f.url && f.ext !== 'mhtml')
       .map(f => ({
@@ -75,7 +77,6 @@ export async function analyzeUrl(url) {
         protocol: f.protocol
       }))
       .sort((a, b) => {
-        // Prefer formats with both video and audio
         if ((a.has_video && a.has_audio) && !(b.has_video && b.has_audio)) return -1;
         if (!(a.has_video && a.has_audio) && (b.has_video && b.has_audio)) return 1;
         return 0;
@@ -88,15 +89,15 @@ export async function analyzeUrl(url) {
       duration: output.duration,
       extractor: output.extractor,
       platform: output.extractor_key,
-      formats: formats.slice(0, 20) // Limit to top 20 formats
+      formats: formats.slice(0, 20)
     };
 
     cache.set(url, result);
     return result;
   } catch (err) {
     console.error('Extraction error:', err.message);
-    if (err.message.includes('Sign in to confirm you') && !hasCookies) {
-      throw new Error('Bloqueio do YouTube detectado. Por favor, siga as instruções para adicionar o arquivo cookies.txt.');
+    if (err.message.includes('Sign in to confirm you')) {
+       throw new Error('Bloqueio do YouTube detectado. O IP do servidor foi sinalizado. É necessário fornecer o arquivo cookies.txt no projeto para continuar.');
     }
     throw err;
   }
@@ -104,20 +105,11 @@ export async function analyzeUrl(url) {
 
 export async function getDownloadStream(url, formatId) {
   const data = await analyzeUrl(url);
-  
-  let selectedFormat = null;
-  if (formatId) {
-     selectedFormat = data.formats.find(f => f.format_id === formatId);
-  } else {
-     selectedFormat = data.formats.find(f => f.has_video && f.has_audio) || data.formats[0]; 
-  }
+  const selectedFormat = formatId ? data.formats.find(f => f.format_id === formatId) : (data.formats.find(f => f.has_video && f.has_audio) || data.formats[0]);
 
-  if (!selectedFormat) {
-    throw new Error('Format not found');
-  }
+  if (!selectedFormat) throw new Error('Format not found');
 
-  // Check if we should proxy (YouTube usually needs proxying for direct URLs)
-  const shouldProxy = data.platform?.toLowerCase() === 'youtube' || selectedFormat.url.includes('googlevideo.com');
+  const shouldProxy = data.platform?.toLowerCase() === 'youtube' || selectedFormat.url.includes('googlevideo.com') || data.platform?.toLowerCase() === 'tiktok';
 
   return {
     downloadUrl: selectedFormat.url,
@@ -131,56 +123,42 @@ export async function getDownloadStream(url, formatId) {
 export function proxyStream(url, formatId, res) {
   const cookiesPath = path.join(__dirname, '..', 'cookies.txt');
   const hasCookies = fs.existsSync(cookiesPath);
+  const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+  const isTikTok = url.includes('tiktok.com');
 
   const args = [
     url,
     '-f', formatId || 'best',
-    '-o', '-', // output to stdout
+    '-o', '-',
     '--no-playlist',
     '--no-check-certificate',
     '--force-ipv4',
     '--geo-bypass',
-    '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
   ];
 
-  if (hasCookies) {
-    args.push('--cookies', cookiesPath);
+  if (isYouTube) {
+    args.push('--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
+    args.push('--referer', 'https://www.google.com/');
+    args.push('--extractor-args', 'youtube:player-client=android,ios,web;player-skip=web_embedded_client_config');
+  } else if (isTikTok) {
+    args.push('--user-agent', 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1');
+    args.push('--referer', 'https://www.tiktok.com/');
+    args.push('--extractor-args', 'tiktok:api_hostname=api16-normal-c-useast1a.tiktokv.com');
+  } else {
+    args.push('--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36');
   }
 
-  if (url.includes('youtube.com') || url.includes('youtu.be')) {
-    args.push('--extractor-args', 'youtube:player-client=android,web;player-skip=web_embedded_client_config');
-  }
+  if (hasCookies) args.push('--cookies', cookiesPath);
 
-  if (url.includes('tiktok.com')) {
-    args.push('--add-header', 'referer:https://www.tiktok.com/');
-  }
-
-  console.log(`Starting proxy stream for ${url} with format ${formatId}`);
-  
   const ytProcess = spawn(binPath, args);
 
   ytProcess.on('error', (err) => {
     console.error('Failed to start yt-dlp process:', err);
-    if (!res.headersSent) {
-      res.status(500).send('Error starting download process');
-    }
+    if (!res.headersSent) res.status(500).send('Error starting download process');
   });
 
   ytProcess.stdout.pipe(res);
-
-  ytProcess.stderr.on('data', (data) => {
-    // console.log(`yt-dlp stderr: ${data}`);
-  });
-
-  ytProcess.on('close', (code) => {
-    if (code !== 0) {
-      console.error(`yt-dlp process exited with code ${code}`);
-      if (!res.headersSent) {
-        res.status(500).send('Error streaming video');
-      }
-    }
-    res.end();
-  });
+  ytProcess.on('close', () => res.end());
 
   return ytProcess;
 }
