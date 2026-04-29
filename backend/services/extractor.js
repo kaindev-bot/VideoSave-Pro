@@ -166,6 +166,13 @@ export function proxyStream(url, formatId, res) {
   
   const ytProcess = spawn(binPath, args);
 
+  ytProcess.on('error', (err) => {
+    console.error('Failed to start yt-dlp process:', err);
+    if (!res.headersSent) {
+      res.status(500).send('Error starting download process');
+    }
+  });
+
   ytProcess.stdout.pipe(res);
 
   ytProcess.stderr.on('data', (data) => {
