@@ -10,17 +10,18 @@ console.log(`Checking yt-dlp at: ${binPath}`);
 
 if (fs.existsSync(binPath)) {
     try {
-      console.log('Attempting to update yt-dlp binary to latest stable...');
-      execSync(`"${binPath}" -U`);
-    } catch (stableError) {
-      console.log('Stable update failed, trying nightly...');
+      console.log('Attempting to update yt-dlp binary to latest NIGHTLY (for best compatibility)...');
+      execSync(`"${binPath}" --update-to nightly`);
+      console.log('yt-dlp nightly update completed.');
+    } catch (nightlyError) {
+      console.log('Nightly update failed, trying stable...');
       try {
-        execSync(`"${binPath}" --update-to nightly`);
-      } catch (nightlyError) {
-        console.log('Nightly update also failed:', nightlyError.message);
+        execSync(`"${binPath}" -U`);
+        console.log('yt-dlp stable update completed.');
+      } catch (stableError) {
+        console.log('Update failed:', stableError.message);
       }
     }
-    console.log('yt-dlp update check completed.');
 } else {
   console.log('yt-dlp binary not found at expected path. It will be downloaded on first run or by npm install.');
 }

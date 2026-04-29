@@ -28,11 +28,15 @@ export async function analyzeUrl(url) {
     noPlaylist: true,
     forceIpv4: true,
     geoBypass: true,
+    impersonate: 'chrome', // Use impersonation to look like a real browser
     addHeader: [
       'referer:https://www.google.com/',
       'user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
       'accept:text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
       'accept-language:en-US,en;q=0.9',
+      'sec-ch-ua:"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+      'sec-ch-ua-mobile:?0',
+      'sec-ch-ua-platform:"Windows"',
     ]
   };
 
@@ -42,14 +46,16 @@ export async function analyzeUrl(url) {
     console.log('Using cookies.txt for extraction');
   }
 
-  // Specific flags for YouTube
+  // Specific flags for YouTube - Using more aggressive bypass
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
-    options.extractorArgs = 'youtube:player-client=web,android;player-skip=web_embedded_client_config';
+    options.extractorArgs = 'youtube:player-client=android,ios,web;player-skip=web_embedded_client_config';
   }
 
   // Specific flags for TikTok
   if (url.includes('tiktok.com')) {
     options.addHeader.push('referer:https://www.tiktok.com/');
+    // TikTok sometimes needs this specific extractor arg for API
+    options.extractorArgs = 'tiktok:api_hostname=api16-normal-c-useast1a.tiktokv.com';
   }
 
   try {
@@ -93,6 +99,10 @@ export async function analyzeUrl(url) {
     return result;
   } catch (err) {
     console.error('Extraction error:', err.message);
+    // If it fails with "Sign in", and we don't have cookies, give a better error
+    if (err.message.includes('Sign in to confirm you') && !hasCookies) {
+      throw new Error('YouTube bloqueou o acesso. Por favor, adicione um arquivo cookies.txt ao servidor para continuar.');
+    }
     throw err;
   }
 }
@@ -135,6 +145,7 @@ export function proxyStream(url, formatId, res) {
     '--no-check-certificate',
     '--force-ipv4',
     '--geo-bypass',
+    '--impersonate', 'chrome',
     '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
   ];
 
@@ -143,11 +154,12 @@ export function proxyStream(url, formatId, res) {
   }
 
   if (url.includes('youtube.com') || url.includes('youtu.be')) {
-    args.push('--extractor-args', 'youtube:player-client=web,android;player-skip=web_embedded_client_config');
+    args.push('--extractor-args', 'youtube:player-client=android,ios,web;player-skip=web_embedded_client_config');
   }
 
   if (url.includes('tiktok.com')) {
     args.push('--add-header', 'referer:https://www.tiktok.com/');
+    args.push('--extractor-args', 'tiktok:api_hostname=api16-normal-c-useast1a.tiktokv.com');
   }
 
   console.log(`Starting proxy stream for ${url} with format ${formatId}`);
