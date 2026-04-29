@@ -1,5 +1,5 @@
 import express from 'express';
-import { analyzeUrl, getDownloadStream } from '../services/extractor.js';
+import { analyzeUrl, getDownloadStream, proxyStream } from '../services/extractor.js';
 
 const router = express.Router();
 
@@ -19,7 +19,7 @@ router.post('/analyze', async (req, res) => {
   }
 });
 
-// Route to get actual download URL/stream (mocked/simplified for this setup)
+// Route to get actual download URL/info
 router.post('/download', async (req, res) => {
   const { url, formatId } = req.body;
   if (!url) {
@@ -32,6 +32,29 @@ router.post('/download', async (req, res) => {
   } catch (error) {
     console.error('Error getting download info:', error.message);
     res.status(500).json({ error: error.message || 'Failed to process download.' });
+  }
+});
+
+// New route for proxied download
+router.get('/proxy-download', async (req, res) => {
+  const { url, formatId, title, ext } = req.query;
+
+  if (!url) {
+    return res.status(400).send('URL is required');
+  }
+
+  try {
+    // Set headers for file download
+    const filename = `${title || 'video'}.${ext || 'mp4'}`;
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
+    res.setHeader('Content-Type', 'application/octet-stream');
+
+    proxyStream(url, formatId, res);
+  } catch (error) {
+    console.error('Proxy download error:', error.message);
+    if (!res.headersSent) {
+      res.status(500).send('Failed to start download stream.');
+    }
   }
 });
 

@@ -23,15 +23,22 @@ export default function VideoPreview({ data, originalUrl }) {
         formatId: formatId
       });
 
-      const { downloadUrl, title, ext } = res.data;
+      const { downloadUrl, title, ext, shouldProxy, formatId: returnedFormatId } = res.data;
 
-      const a = document.createElement('a');
-      a.href = downloadUrl;
-      a.download = `${title}.${ext}`;
-      a.target = '_blank';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      if (shouldProxy) {
+        // Use the proxy endpoint
+        const proxyUrl = `${apiUrl}/api/proxy-download?url=${encodeURIComponent(originalUrl)}&formatId=${returnedFormatId}&title=${encodeURIComponent(title)}&ext=${ext}`;
+        window.location.href = proxyUrl;
+      } else {
+        // Direct download
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = `${title}.${ext}`;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
 
     } catch (error) {
       alert(error.response?.data?.error || 'Erro ao iniciar o download. Tente novamente.');
@@ -72,35 +79,41 @@ export default function VideoPreview({ data, originalUrl }) {
           Opções de Download
         </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-          {data.formats.slice(0, 8).map((format) => (
-            <button
-              key={format.format_id}
-              onClick={() => handleDownload(format.format_id)}
-              disabled={downloadingId === format.format_id}
-              className="aero-button flex items-center justify-between p-3 text-left disabled:opacity-50"
-            >
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full shadow-inner ${format.has_video ? 'bg-blue-900/20 text-white' : 'bg-green-900/20 text-white'}`}>
-                  {format.has_video ? <Film className="w-5 h-5 drop-shadow-md" /> : <Music className="w-5 h-5 drop-shadow-md" />}
-                </div>
-                <div>
-                  <div className="font-bold text-white text-base drop-shadow-md">
-                    {format.resolution === 'audio only' ? 'Apenas Áudio' : format.resolution}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+          {data.formats.length > 0 ? (
+            data.formats.slice(0, 15).map((format) => (
+              <button
+                key={format.format_id}
+                onClick={() => handleDownload(format.format_id)}
+                disabled={downloadingId === format.format_id}
+                className="aero-button flex items-center justify-between p-3 text-left disabled:opacity-50"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-full shadow-inner ${format.has_video ? 'bg-blue-900/20 text-white' : 'bg-green-900/20 text-white'}`}>
+                    {format.has_video ? <Film className="w-5 h-5 drop-shadow-md" /> : <Music className="w-5 h-5 drop-shadow-md" />}
                   </div>
-                  <div className="text-xs text-white/90 font-medium drop-shadow-sm">
-                    {format.ext.toUpperCase()} • {format.filesize ? (format.filesize / 1024 / 1024).toFixed(1) + ' MB' : 'Tam. Desconhecido'}
+                  <div>
+                    <div className="font-bold text-white text-base drop-shadow-md">
+                      {format.resolution === 'audio only' ? 'Apenas Áudio' : format.resolution}
+                    </div>
+                    <div className="text-xs text-white/90 font-medium drop-shadow-sm">
+                      {format.ext.toUpperCase()} • {format.filesize ? (format.filesize / 1024 / 1024).toFixed(1) + ' MB' : 'Tam. Desconhecido'}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {downloadingId === format.format_id ? (
-                <div className="loader-spinner" />
-              ) : (
-                <CheckCircle className="w-6 h-6 text-white drop-shadow-md" />
-              )}
-            </button>
-          ))}
+                {downloadingId === format.format_id ? (
+                  <div className="loader-spinner" />
+                ) : (
+                  <CheckCircle className="w-6 h-6 text-white drop-shadow-md" />
+                )}
+              </button>
+            ))
+          ) : (
+            <div className="col-span-full p-8 text-center bg-white/40 rounded-2xl border border-white/50 text-[#0b4b8a] font-bold">
+              Nenhuma opção de download encontrada para este vídeo.
+            </div>
+          )}
         </div>
       </div>
     </div>
